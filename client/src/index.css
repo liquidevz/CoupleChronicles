@@ -1,0 +1,149 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 98%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(343, 100%, 70%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(343, 43%, 89%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(343, 100%, 70%);
+  --radius: 0.75rem;
+
+  /* Romantic color palette */
+  --romantic-pink: hsl(343, 100%, 70%);
+  --soft-rose: hsl(343, 59%, 85%);
+  --warm-coral: hsl(20, 54%, 76%);
+  --blush: hsl(343, 36%, 94%);
+  --deep-mauve: hsl(305, 22%, 52%);
+  --mint-green: hsl(134, 41%, 88%);
+  --warm-white: hsl(0, 0%, 98%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(343, 100%, 70%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .font-romantic {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer components {
+  .glass-morphism {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  
+  .gradient-romantic {
+    background: linear-gradient(135deg, hsl(343, 100%, 70%) 0%, hsl(20, 54%, 76%) 100%);
+  }
+  
+  .gradient-soft {
+    background: linear-gradient(135deg, hsl(343, 59%, 85%) 0%, hsl(343, 36%, 94%) 100%);
+  }
+  
+  .mood-indicator {
+    transition: all 0.3s ease;
+  }
+  
+  .mood-indicator:hover {
+    transform: scale(1.1);
+  }
+  
+  .calendar-day {
+    transition: all 0.2s ease;
+  }
+  
+  .calendar-day:hover {
+    background: linear-gradient(135deg, hsl(343, 100%, 70%), hsl(343, 59%, 85%));
+    transform: translateY(-2px);
+  }
+  
+  .memory-card {
+    transition: all 0.3s ease;
+  }
+  
+  .memory-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px -5px rgba(255, 107, 157, 0.2);
+  }
+  
+  @keyframes heartbeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+  
+  .heartbeat {
+    animation: heartbeat 2s ease-in-out infinite;
+  }
+  
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 12px;
+    background: hsl(343, 100%, 70%);
+    border-radius: 50%;
+    top: 20px;
+    border: 3px solid white;
+    box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2);
+  }
+
+  .shadow-romantic {
+    box-shadow: 0 10px 25px -5px rgba(255, 107, 157, 0.1), 0 10px 10px -5px rgba(255, 107, 157, 0.04);
+  }
+
+  .shadow-soft {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  }
+}
