@@ -99,23 +99,42 @@ The application uses a well-structured relational database with the following ma
 - Hot module replacement for rapid development cycles
 - TypeScript compilation checking with `npm run check`
 
-### Production Build Process
-1. Frontend builds to `dist/public` directory via Vite
-2. Backend compiles to `dist/index.js` via esbuild
-3. Static file serving integrated into Express server
-4. Environment variables for database connection and OAuth credentials
+### Production Deployment (Vercel)
+**Status: Production-ready for GitHub to Vercel deployment**
 
-### Database Management
+#### Build Configuration
+1. Frontend builds to `dist/public` directory via Vite
+2. Backend compiled for Vercel serverless functions via esbuild
+3. Vercel-specific API endpoint in `/api/index.ts` for serverless deployment
+4. Static file serving optimized for Vercel CDN
+
+#### Deployment Files
+- `vercel.json`: Vercel deployment configuration with routing rules
+- `api/index.ts`: Serverless function entry point for Vercel
+- `DEPLOYMENT.md`: Complete production deployment guide
+- `.env.example`: Template for required environment variables
+- `README.md`: Comprehensive project documentation
+
+#### Database Management
 - Drizzle Kit for schema migrations stored in `./migrations`
 - Database push command for schema synchronization
+- Supabase PostgreSQL database integration for production
 - Environment-based configuration for development and production databases
 
-### Environment Configuration
-Required environment variables:
-- `DATABASE_URL`: PostgreSQL connection string
-- `GOOGLE_CLIENT_ID`: OAuth client identifier
-- `GOOGLE_CLIENT_SECRET`: OAuth client secret
-- `SESSION_SECRET`: Session encryption key
-- `PARTNER1_EMAIL` & `PARTNER2_EMAIL`: Authorized user emails
+#### Environment Configuration
+Production environment variables required:
+- `DATABASE_URL`: Supabase PostgreSQL connection string
+- `GOOGLE_CLIENT_ID`: OAuth client identifier from Google Cloud Console
+- `GOOGLE_CLIENT_SECRET`: OAuth client secret from Google Cloud Console
+- `SESSION_SECRET`: Random string for session encryption (min 32 characters)
+- `PARTNER1_EMAIL` & `PARTNER2_EMAIL`: Authorized Gmail addresses only
+- `NODE_ENV`: Production environment flag
+
+#### Security Features
+- OAuth restricted to exactly 2 predefined Gmail addresses
+- Session-based authentication with encrypted cookies
+- HTTPS enforcement in production
+- Health check endpoint at `/api/health`
+- Request size limits (10MB) for photo uploads
 
 The application is designed as a private couple's app with restricted access, emphasizing security, romantic user experience, and seamless data synchronization between partners.

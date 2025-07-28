@@ -1,5 +1,5 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import {
   users,
@@ -25,8 +25,28 @@ import {
   type InsertLoveNote,
 } from "@shared/schema";
 
-const connection = process.env.DATABASE_URL ? neon(process.env.DATABASE_URL) : null;
-const db = connection ? drizzle(connection) : null;
+// Create database connection
+let connection: any = null;
+let db: any = null;
+
+const createConnection = () => {
+  try {
+    if (process.env.DATABASE_URL) {
+      console.log('Attempting to connect to database...');
+      connection = postgres(process.env.DATABASE_URL);
+      db = drizzle(connection);
+      console.log('Database connection established successfully');
+      return true;
+    }
+  } catch (error) {
+    console.error('Failed to connect to database:', error);
+    return false;
+  }
+  return false;
+};
+
+// Initialize connection
+createConnection();
 
 export interface IStorage {
   // Users
@@ -77,26 +97,31 @@ export interface IStorage {
 }
 
 export class DbStorage implements IStorage {
-  private checkConnection() {
+  private async checkConnection() {
     if (!db) {
-      throw new Error('Database not connected. Please provide DATABASE_URL environment variable.');
+      // Try to reconnect
+      if (createConnection()) {
+        return;
+      }
+      // If database is not available, throw a more specific error
+      throw new Error('Database connection failed. Please check your DATABASE_URL and ensure the database is accessible.');
     }
   }
 
   async getUser(id: string): Promise<User | undefined> {
-    this.checkConnection();
+    await this.checkConnection();
     const result = await db!.select().from(users).where(eq(users.id, id)).limit(1);
     return result[0];
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    this.checkConnection();
+    await this.checkConnection();
     const result = await db!.select().from(users).where(eq(users.email, email)).limit(1);
     return result[0];
   }
 
   async getUserByGoogleId(googleId: string): Promise<User | undefined> {
-    this.checkConnection();
+    await this.checkConnection();
     const result = await db!.select().from(users).where(eq(users.googleId, googleId)).limit(1);
     return result[0];
   }

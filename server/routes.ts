@@ -36,7 +36,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const email = profile.emails?.[0]?.value;
       
       if (!email || !AUTHORIZED_EMAILS.includes(email)) {
-        return done(new Error('Unauthorized email address'), null);
+        return done(new Error('Unauthorized email address'), undefined);
       }
 
       let user = await storage.getUserByGoogleId(profile.id);
@@ -68,14 +68,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       return done(null, user);
     } catch (error) {
-      return done(error, null);
+      console.error('OAuth verification error:', error);
+      // Return a more specific error for database connection issues
+      if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' && error.message.includes('fetch failed')) {
+        return done(new Error('Database connection failed. Please try again.'), undefined);
+      }
+      return done(error as Error, undefined);
     }
   }));
 
   }
 
   passport.serializeUser((user: any, done) => {
-    done(null, user.id);
+    if (user) {
+      done(null, user.id);
+    } else {
+      done(new Error('No user to serialize'), null);
+    }
   });
 
   passport.deserializeUser(async (id: string, done) => {
@@ -83,7 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(id);
       done(null, user);
     } catch (error) {
-      done(error, null);
+      done(error, undefined);
     }
   });
 
@@ -113,8 +122,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     app.get('/api/auth/google/callback',
       passport.authenticate('google', { failureRedirect: '/login' }),
-      (req, res) => {
-        res.redirect('/');
+      async (req, res) => {
+        try {
+          res.redirect('/');
+        } catch (error) {
+          console.error('OAuth callback error:', error);
+          res.redirect('/login?error=oauth_failed');
+        }
       }
     );
   } else {
@@ -159,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const couple = await storage.getCoupleByUserId(user.id);
       if (!couple) {
-        return res.status(404).json({ message: 'Couple not found' });
+        return res.json(null); // Return null instead of 404 for first-time users
       }
       
       const coupleWithUsers = await storage.getCoupleWithUsers(couple.id);
@@ -169,13 +183,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/couples', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const existingCouple = await storage.getCoupleByUserId(user.id);
+      if (existingCouple) {
+        return res.status(400).json({ message: 'Couple already exists' });
+      }
+
+      // Find the other authorized user
+      const otherEmail = AUTHORIZED_EMAILS.find(email => email !== user.email);
+      if (!otherEmail) {
+        return res.status(400).json({ message: 'No partner email configured' });
+      }
+
+      const otherUser = await storage.getUserByEmail(otherEmail);
+      if (!otherUser) {
+        return res.status(400).json({ message: 'Partner has not signed up yet' });
+      }
+
+      const coupleData = {
+        partner1Id: user.id,
+        partner2Id: otherUser.id,
+        relationshipStart: new Date(req.body.relationshipStart || new Date())
+      };
+
+      const couple = await storage.createCouple(coupleData);
+      const coupleWithUsers = await storage.getCoupleWithUsers(couple.id);
+      res.json(coupleWithUsers);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to create couple' });
+    }
+  });
+
   // Calendar routes
   app.get('/api/calendar/events', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
       const couple = await storage.getCoupleByUserId(user.id);
       if (!couple) {
-        return res.status(404).json({ message: 'Couple not found' });
+        return res.json([]); // Return empty array for users without couples
       }
       
       const events = await storage.getCalendarEvents(couple.id);
@@ -188,9 +235,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/calendar/events', requireAuth, async (req, res) => {
     try {
       const user = req.user as any;
-      const couple = await storage.getCoupleByUserId(user.id);
+      let couple = await storage.getCoupleByUserId(user.id);
+      
       if (!couple) {
-        return res.status(404).json({ message: 'Couple not found' });
+        // Try to auto-create couple if partner exists
+        const otherEmail = AUTHORIZED_EMAILS.find(email => email !== user.email);
+        if (otherEmail) {
+          const otherUser = await storage.getUserByEmail(otherEmail);
+          if (otherUser) {
+            couple = await storage.createCouple({
+              partner1Id: user.id,
+              partner2Id: otherUser.id,
+              relationshipStart: new Date()
+            });
+          }
+        }
+        
+        if (!couple) {
+          return res.status(400).json({ message: 'Partner must sign up first to create events' });
+        }
       }
 
       const eventData = insertCalendarEventSchema.parse({
@@ -216,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const couple = await storage.getCoupleByUserId(user.id);
       if (!couple) {
-        return res.status(404).json({ message: 'Couple not found' });
+        return res.json([]); // Return empty array for users without couples
       }
       
       const photos = await storage.getPhotos(couple.id);
@@ -256,9 +319,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const mood = await storage.getUserMood(user.id, new Date());
-      res.json(mood);
+      res.json(mood || null);
     } catch (error) {
       res.status(500).json({ message: 'Failed to fetch mood' });
+    }
+  });
+
+  app.get('/api/moods/partner/today', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const couple = await storage.getCoupleByUserId(user.id);
+      if (!couple) {
+        return res.json(null);
+      }
+      
+      const partnerId = couple.partner1Id === user.id ? couple.partner2Id : couple.partner1Id;
+      const mood = await storage.getUserMood(partnerId, new Date());
+      res.json(mood || null);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch partner mood' });
     }
   });
 
@@ -371,7 +450,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const couple = await storage.getCoupleByUserId(user.id);
       if (!couple) {
-        return res.status(404).json({ message: 'Couple not found' });
+        return res.json({ daysTogether: 0, memoriesShared: 0, datesPlanned: 0, loveNotes: 0 }); // Return default stats
       }
       
       const stats = await storage.getCoupleStats(couple.id);
