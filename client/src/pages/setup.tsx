@@ -83,7 +83,7 @@ export default function Setup() {
         <div className="text-center mb-8">
           <Heart className="w-16 h-16 text-romantic-pink heartbeat mx-auto mb-4" />
           <h1 className="text-4xl font-romantic text-gray-800 mb-2">
-            Welcome to LoveSync
+            Welcome Baby
           </h1>
           <p className="text-lg text-gray-600">
             Let's set up your romantic dashboard in just a few steps
